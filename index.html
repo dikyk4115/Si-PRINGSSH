@@ -4,260 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SI-PRING SSH 2026 | Inspektorat Pringsewu</title>
-    <!-- Framework & Ikon -->
+    <!-- CSS & Ikon -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        
-        :root {
-            --primary: #2563eb;
-            --danger: #dc2626;
-            --success: #059669;
-        }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f8fafc;
-            -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
-        }
-
-        .app-container {
-            max-width: 500px;
-            margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Animasi Getar Jika Harga Kemahalan */
+        :root { --primary: #2563eb; --danger: #dc2626; --success: #059669; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         .danger-mode { animation: pulse-red 0.8s infinite; }
-        @keyframes pulse-red { 
-            0%, 100% { background-color: var(--danger); } 
-            50% { background-color: #991b1b; } 
-        }
-
+        @keyframes pulse-red { 0%, 100% { background-color: var(--danger); } 50% { background-color: #991b1b; } }
         .shake { animation: shake-anim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake-anim { 
-            10%, 90% { transform: translate3d(-1px, 0, 0); } 
-            20%, 80% { transform: translate3d(2px, 0, 0); } 
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 
-            40%, 60% { transform: translate3d(4px, 0, 0); } 
-        }
-
+        @keyframes shake-anim { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        .btn-active {
-            background-color: var(--primary);
-            color: white;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-        }
-
-        .pin-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            border: 2px solid #cbd5e1;
-            transition: all 0.2s;
-        }
-        .pin-dot.filled {
-            background-color: var(--primary);
-            border-color: var(--primary);
-            transform: scale(1.2);
-        }
+        .btn-active { background-color: var(--primary); color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); }
+        .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #cbd5e1; transition: all 0.2s; }
+        .pin-dot.filled { background-color: var(--primary); border-color: var(--primary); transform: scale(1.2); }
     </style>
-</head>
-<body class="bg-slate-50">
 
-    <div class="app-container p-4 pb-32">
-        <!-- Header -->
-        <header class="text-center mt-6 mb-8">
-            <div class="bg-blue-600 inline-flex p-4 rounded-[2rem] shadow-xl mb-4 transform hover:scale-110 transition-transform">
-                <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
-            </div>
-            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tighter italic">SI-PRING <span class="text-blue-600">SSH</span></h1>
-            <div class="mt-2 space-y-1">
-                <p class="text-blue-600 text-[10px] font-extrabold uppercase tracking-widest leading-tight px-4">Sistem Informasi Pengawasan Standar Harga Pringsewu 2026</p>
-                <p class="text-slate-500 text-[11px] font-bold">Inspektorat Kabupaten Pringsewu</p>
-            </div>
-            <div class="mt-4"><span class="text-[8px] bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-black uppercase tracking-widest">Aplikasi Aktif</span></div>
-        </header>
+    <!-- Firebase Real-time Core -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        <!-- Search View -->
-        <div id="view-cari" class="space-y-6">
-            <div class="relative group">
-                <input type="text" id="search-input" placeholder="Cari item SSH 2026..." 
-                    class="w-full p-6 pl-14 rounded-[2.5rem] shadow-xl border-none focus:ring-4 focus:ring-blue-100 outline-none text-lg transition-all"
-                    onkeyup="handleSearch()">
-                <i data-lucide="search" class="absolute left-6 top-6 text-slate-300 group-focus-within:text-blue-600 transition-colors"></i>
-            </div>
+        // Inisialisasi Firebase (Aturan 1, 2, 3)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-            <div id="results-card" class="hidden bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
-                <div class="p-4 bg-slate-50 border-b flex justify-between items-center px-8 text-[10px] font-black text-slate-400 uppercase">
-                    <span id="result-count">Hasil Pencarian</span>
-                    <span class="text-blue-500 italic">Ketuk untuk Uji Harga</span>
-                </div>
-                <div id="results-list" class="max-h-[50vh] overflow-y-auto custom-scroll"></div>
-            </div>
-
-            <div id="empty-state" class="text-center py-20 opacity-20">
-                <i data-lucide="database-search" class="w-20 h-20 mx-auto mb-4"></i>
-                <p class="font-bold uppercase text-xs tracking-widest leading-relaxed">Ketik nama barang 2026</p>
-            </div>
-        </div>
-
-        <!-- Admin View -->
-        <div id="view-admin" class="hidden space-y-6 animate-in zoom-in-95 duration-300">
-            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100">
-                <div class="flex justify-between items-start mb-10">
-                    <div class="flex items-center gap-5 text-left">
-                        <div class="p-5 bg-blue-50 rounded-3xl text-blue-600 shadow-inner"><i data-lucide="file-spreadsheet"></i></div>
-                        <div>
-                            <h2 class="font-black text-slate-800 text-xl leading-none">Akses Admin</h2>
-                            <p class="text-[10px] text-emerald-600 font-bold uppercase mt-2 italic leading-none">Database Management</p>
-                        </div>
-                    </div>
-                    <button onclick="logout()" class="p-3 bg-red-50 text-red-400 rounded-2xl hover:text-red-600 transition-all"><i data-lucide="log-out" class="w-5 h-5"></i></button>
-                </div>
-
-                <div class="border-4 border-dotted border-slate-200 rounded-[2.5rem] p-12 text-center bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-all cursor-pointer group mb-8"
-                    onclick="document.getElementById('file-input').click()">
-                    <div class="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl group-hover:scale-110 transition-transform">
-                        <i data-lucide="upload-cloud" class="w-10 h-10 text-blue-500"></i>
-                    </div>
-                    <p id="file-name" class="text-sm font-black text-slate-600 italic">Pilih Master CSV SSH</p>
-                    <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase tracking-widest text-center px-4">Upload SSH baru untuk memperbarui data.</p>
-                    <input type="file" id="file-input" class="hidden" accept=".csv" onchange="onFileSelect(this)">
-                </div>
-
-                <button id="btn-sync" onclick="importData()" class="w-full py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-4 text-xs tracking-widest uppercase">
-                    <i data-lucide="refresh-cw" class="w-5 h-5"></i> UPDATE DATA SEKARANG
-                </button>
-                
-                <button onclick="resetData()" class="w-full mt-4 py-3 text-slate-300 font-bold text-[9px] uppercase tracking-[0.2em] hover:text-red-500 transition-colors">Hapus Pembaruan & Reset Default</button>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="mt-12 text-center pb-10 px-6 border-t pt-8">
-            <p class="text-[11px] text-slate-800 font-black">Copyright © 2026 Diky Kurniawan</p>
-            <p class="text-[9px] text-slate-400 font-medium mt-1">Inspektorat Kabupaten Pringsewu</p>
-        </footer>
-    </div>
-
-    <!-- Navigasi Bawah -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex bg-white/90 backdrop-blur-xl p-2 rounded-full shadow-2xl border border-slate-200 z-50 w-[90%] max-w-[400px]">
-        <button onclick="switchTab('cari')" id="nav-cari" class="flex-1 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 btn-active transition-all"><i data-lucide="search" class="w-4 h-4"></i> Cari</button>
-        <button onclick="switchTab('admin')" id="nav-admin" class="flex-1 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 text-slate-400 transition-all"><i id="lock-icon" data-lucide="lock" class="w-4 h-4"></i> Admin</button>
-    </nav>
-
-    <!-- Modal PIN -->
-    <div id="modal-pin" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
-        <div class="bg-white w-full max-w-xs rounded-[3rem] p-10 text-center shadow-2xl animate-in zoom-in-95">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="lock-keyhole"></i>
-            </div>
-            <h3 class="font-black text-slate-800 text-xl mb-2">Akses Admin</h3>
-            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-8 text-center">Masukkan PIN Keamanan</p>
-            <div class="flex justify-center gap-4 mb-8">
-                <div class="pin-dot" id="dot-1"></div><div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div><div class="pin-dot" id="dot-4"></div>
-            </div>
-            <input type="tel" id="pin-input" maxlength="4" class="absolute opacity-0 pointer-events-none" oninput="handlePinInput(this)">
-            <button onclick="document.getElementById('pin-input').focus()" class="w-full py-4 bg-slate-100 text-slate-600 font-black rounded-2xl mb-4 text-[10px] uppercase tracking-widest">Ketuk untuk Mengisi PIN</button>
-            <button onclick="closeP()" class="text-slate-300 font-bold text-[10px] uppercase">Batalkan</button>
-        </div>
-    </div>
-
-    <!-- Modal Audit -->
-    <div id="modal-audit" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-[100]">
-        <div id="modal-card" class="bg-white w-full max-w-md rounded-t-[3.5rem] sm:rounded-[3.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
-            <div id="modal-header" class="bg-slate-800 p-10 text-white relative transition-colors duration-500">
-                <button onclick="closeM()" class="absolute top-8 right-8 bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-                <h2 id="modal-name" class="text-2xl font-black leading-tight pr-10 text-left">Nama Item</h2>
-            </div>
-            <div class="p-10 space-y-8">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-left">
-                        <span class="text-[9px] font-black text-slate-300 uppercase block mb-1">Standar SSH</span>
-                        <span id="modal-ssh" class="text-xl font-black text-blue-600 leading-none">Rp 0</span>
-                    </div>
-                    <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-left">
-                        <span class="text-[9px] font-black text-slate-300 uppercase block mb-1">Satuan</span>
-                        <span id="modal-unit" class="text-xl font-bold text-slate-700 uppercase leading-none">-</span>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 italic text-left">Input Harga Nota Auditor</label>
-                    <div class="relative group">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">Rp</span>
-                        <input type="number" id="input-harga" placeholder="0" class="w-full pl-16 pr-8 py-6 bg-slate-50 border-4 border-transparent rounded-[2rem] text-4xl font-black focus:outline-none focus:bg-white focus:border-blue-50 transition-all shadow-inner" oninput="runAudit()">
-                    </div>
-                </div>
-                <div id="modal-result" class="hidden p-8 rounded-[2.5rem] text-center border-4 transform transition-all duration-300 shadow-xl">
-                    <p id="result-status" class="font-black uppercase text-[10px] tracking-widest mb-2 italic"></p>
-                    <p id="result-diff" class="text-4xl font-black leading-none"></p>
-                </div>
-            </div>
-            <div class="p-8 bg-slate-50 border-t flex gap-4">
-                <button onclick="closeM()" class="flex-1 py-5 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Batal</button>
-                <button onclick="saveAudit()" class="flex-[2] py-5 bg-slate-800 text-white font-black rounded-3xl shadow-xl uppercase text-[10px] tracking-widest hover:bg-slate-900 transition-all">Simpan Hasil</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Alert Custom -->
-    <div id="custom-alert" class="hidden fixed top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-8 py-4 rounded-full shadow-2xl z-[300] font-bold text-sm flex items-center gap-3">
-        <i data-lucide="info" class="w-4 h-4 text-blue-400"></i><span id="alert-msg">Pesan</span>
-    </div>
-
-    <script>
-        // ==========================================
-        // DATABASE BAWAAN (DEFAULT DATA 2026)
-        // ==========================================
-        const INITIAL_DATA = [
-            {n:"Amplop Besar (untuk berkas)", s:"bh", h:5500, k:"ATK"},
-            {n:"Amplop coklat besar", s:"pak", h:75000, k:"ATK"},
-            {n:"Lakban Bening Nachi 5 cm", s:"bh", h:12500, k:"ATK"},
-            {n:"Semen Tiga Roda 50kg", s:"Sak", h:72000, k:"Material"},
-            {n:"Kertas HVS A4 80gr", s:"Rim", h:54000, k:"ATK"},
-            {n:"Tali Asih Veteran", s:"paket", h:1000000, k:"Sosial"},
-            {n:"Selendang Tapis", s:"bh", h:120000, k:"Tapis"},
-            {n:"Pemeliharaan Chainsaw", s:"unit", h:250000, k:"Jasa"}
-        ];
-
-        let database = JSON.parse(localStorage.getItem('sipring_db_2026')) || INITIAL_DATA;
+        // State Aplikasi
         const ADMIN_PIN = "0808";
-        let isAdmin = false;
+        window.isAdmin = false;
+        window.database = [];
         let csvContent = null;
         let selectedItem = null;
 
-        window.onload = () => { lucide.createIcons(); };
+        // Langkah 1: Login Dulu (Wajib Aturan 3)
+        const initSession = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        // Langkah 2: Jika sudah login, dengarkan data awan (Aturan 1)
+                        listenToCloud();
+                    }
+                });
+            } catch (err) {
+                console.error("Auth failed:", err);
+                loadOfflineData();
+            }
+        };
 
+        const listenToCloud = () => {
+            // Path Ketat Sesuai Aturan 1
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ssh_master', 'current');
+            
+            onSnapshot(docRef, (snap) => {
+                if (snap.exists()) {
+                    window.database = snap.data().items || [];
+                    updateConnStatus(true);
+                    // Refresh pencarian jika user sedang mengetik
+                    if (document.getElementById('search-input').value) window.jalankanCari();
+                } else {
+                    loadOfflineData();
+                }
+            }, (err) => {
+                console.error("Sync error:", err);
+                loadOfflineData();
+            });
+        };
+
+        const updateConnStatus = (online) => {
+            const el = document.getElementById('conn-status');
+            el.innerText = online ? "Cloud Terhubung (Update Otomatis)" : "Mode Lokal (Offline)";
+            el.className = online ? "text-[8px] bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-black uppercase tracking-widest"
+                                  : "text-[8px] bg-slate-100 text-slate-400 px-3 py-1 rounded-full font-black uppercase tracking-widest";
+        };
+
+        const loadOfflineData = () => {
+            const local = localStorage.getItem('sipring_cache_2026');
+            window.database = local ? JSON.parse(local) : [
+                {n:"Contoh Barang (Update di Admin)", s:"bh", h:1000, k:"Default"}
+            ];
+            updateConnStatus(false);
+        };
+
+        // Fungsi Global untuk Tombol-Tombol
         window.switchTab = (tab) => {
-            if(tab === 'admin' && !isAdmin) {
+            if(tab === 'admin' && !window.isAdmin) {
                 document.getElementById('modal-pin').classList.remove('hidden');
                 document.getElementById('pin-input').value = '';
                 updateDots("");
                 document.getElementById('pin-input').focus();
                 return;
             }
-            const vCari = document.getElementById('view-cari');
+            const vSearch = document.getElementById('view-search');
             const vAdmin = document.getElementById('view-admin');
-            const nCari = document.getElementById('nav-cari');
+            const nSearch = document.getElementById('nav-search');
             const nAdmin = document.getElementById('nav-admin');
 
-            if(tab === 'cari') {
-                vCari.classList.remove('hidden'); vAdmin.classList.add('hidden');
-                nCari.classList.add('btn-active'); nCari.classList.remove('text-slate-400');
-                nAdmin.classList.remove('btn-active'); nAdmin.classList.add('text-slate-400');
+            if(tab === 'search') {
+                vSearch.classList.remove('hidden'); vAdmin.classList.add('hidden');
+                nSearch.classList.add('btn-active'); nAdmin.classList.remove('btn-active');
             } else {
-                vCari.classList.add('hidden'); vAdmin.classList.remove('hidden');
-                nAdmin.classList.add('btn-active'); nAdmin.classList.remove('text-slate-400');
-                nCari.classList.remove('btn-active'); nCari.classList.add('text-slate-400');
+                vSearch.classList.add('hidden'); vAdmin.classList.remove('hidden');
+                nAdmin.classList.add('btn-active'); nSearch.classList.remove('btn-active');
             }
             lucide.createIcons();
         };
@@ -265,7 +126,7 @@
         window.handlePinInput = (el) => {
             updateDots(el.value);
             if(el.value === ADMIN_PIN) {
-                isAdmin = true;
+                window.isAdmin = true;
                 document.getElementById('lock-icon').setAttribute('data-lucide', 'database');
                 document.getElementById('modal-pin').classList.add('hidden');
                 window.switchTab('admin');
@@ -286,15 +147,21 @@
         window.onFileSelect = (input) => {
             const file = input.files[0];
             if(file) {
-                document.getElementById('file-name').innerText = file.name;
+                document.getElementById('file-label').innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = (e) => csvContent = e.target.result;
                 reader.readAsText(file);
             }
         };
 
-        window.importData = () => {
-            if(!csvContent) { showAlert("⚠️ Pilih file CSV dulu!"); return; }
+        // FUNGSI UPDATE DATA PUSAT (Update ke Awan)
+        window.updateDataPusat = async () => {
+            if(!csvContent) { showAlert("⚠️ Pilih file CSV!"); return; }
+            const btn = document.getElementById('btn-sync');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i> MENGIRIM...';
+            lucide.createIcons();
+
             try {
                 const lines = csvContent.split('\n');
                 const newDB = [];
@@ -308,82 +175,224 @@
                         if(n && !isNaN(h)) newDB.push({ n, s, h });
                     }
                 }
+                
                 if(newDB.length > 0) {
-                    database = newDB;
-                    localStorage.setItem('sipring_db_2026', JSON.stringify(database));
-                    showAlert(`✅ Berhasil! ${database.length} Item Diperbarui`);
-                    window.switchTab('cari');
-                } else {
-                    showAlert("❌ Format Kolom Salah");
+                    // Simpan ke Firestore (Akan otomatis update di HP semua pengguna)
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ssh_master', 'current');
+                    await setDoc(docRef, { 
+                        items: newDB, 
+                        updatedAt: new Date().toISOString(),
+                        author: "Diky Kurniawan"
+                    });
+                    
+                    localStorage.setItem('sipring_cache_2026', JSON.stringify(newDB));
+                    showAlert(`🚀 BERHASIL! ${newDB.length} data dikirim ke semua auditor.`);
+                    window.switchTab('search');
                 }
-            } catch(e) { showAlert("❌ Gagal Import Data"); }
+            } catch(e) { showAlert("❌ Gagal Terhubung Awan"); }
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5"></i> SINKRONKAN SEMUA PENGGUNA';
+            lucide.createIcons();
         };
 
-        window.doSearch = () => {
+        // FUNGSI CARI (PASTI JALAN)
+        window.jalankanCari = () => {
             const q = document.getElementById('search-input').value.toLowerCase();
             const list = document.getElementById('results-list');
             const card = document.getElementById('results-card');
             const empty = document.getElementById('empty-state');
-            const count = document.getElementById('result-count');
             
-            if(q.length < 2) { card.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+            if(q.length < 1) { card.classList.add('hidden'); empty.classList.remove('hidden'); return; }
             
-            const filtered = database.filter(i => i.n.toLowerCase().includes(q));
+            const filtered = window.database.filter(i => i.n.toLowerCase().includes(q));
             list.innerHTML = '';
             
             if(filtered.length > 0) {
                 card.classList.remove('hidden'); empty.classList.add('hidden');
-                count.innerText = `Menampilkan ${filtered.length} Barang`;
+                document.getElementById('r-count').innerText = `${filtered.length} Barang SSH 2026`;
                 filtered.forEach(item => {
                     const div = document.createElement('div');
                     div.className = "px-8 py-5 border-b hover:bg-blue-50 active:bg-blue-100 cursor-pointer flex justify-between items-center transition-all";
-                    div.onclick = () => {
-                        selectedItem = item;
-                        document.getElementById('modal-name').innerText = item.n;
-                        document.getElementById('modal-ssh').innerText = "Rp " + item.h.toLocaleString('id-ID');
-                        document.getElementById('modal-unit').innerText = item.s;
-                        document.getElementById('input-harga').value = '';
-                        document.getElementById('modal-result').classList.add('hidden');
-                        document.getElementById('modal-header').className = "bg-slate-800 p-10 text-white relative transition-colors duration-500";
-                        document.getElementById('modal-audit').classList.remove('hidden');
-                    };
-                    div.innerHTML = `<div><p class="font-bold text-slate-800">${item.n}</p><p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">${item.s}</p></div><p class="text-lg font-black text-slate-900 shrink-0 ml-4">Rp ${item.h.toLocaleString('id-ID')}</p>`;
+                    div.onclick = () => window.bukaAudit(item);
+                    div.innerHTML = `
+                        <div class="text-left">
+                            <p class="font-bold text-slate-800 leading-tight">${item.n}</p>
+                            <p class="text-[9px] text-slate-400 font-black uppercase mt-1 tracking-widest">${item.s}</p>
+                        </div>
+                        <p class="text-lg font-black text-slate-900 shrink-0 ml-4">Rp ${item.h.toLocaleString('id-ID')}</p>
+                    `;
                     list.appendChild(div);
                 });
-            } else { 
-                list.innerHTML = '<p class="p-12 text-center text-slate-400 italic font-black">Data SSH 2026 tidak ditemukan...</p>'; 
-            }
+            } else { list.innerHTML = '<p class="p-12 text-center text-slate-400 italic">Data tidak ditemukan...</p>'; }
         };
 
-        window.runAudit = () => {
-            const input = parseFloat(document.getElementById('input-harga').value) || 0;
-            const resBox = document.getElementById('modal-result');
-            const hdr = document.getElementById('modal-header');
-            const card = document.getElementById('modal-card');
-            const diff = input - selectedItem.h;
-            
-            if(input <= 0) { resBox.classList.add('hidden'); return; }
+        window.bukaAudit = (item) => {
+            selectedItem = item;
+            document.getElementById('m-name').innerText = item.n;
+            document.getElementById('m-ssh').innerText = "Rp " + item.h.toLocaleString('id-ID');
+            document.getElementById('m-unit').innerText = item.s;
+            document.getElementById('i-harga').value = '';
+            document.getElementById('audit-res').classList.add('hidden');
+            document.getElementById('m-header').className = "bg-slate-800 p-10 text-white relative";
+            document.getElementById('modal-audit').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.prosesAudit = () => {
+            const inputVal = parseFloat(document.getElementById('i-harga').value) || 0;
+            const resBox = document.getElementById('audit-res');
+            const hdr = document.getElementById('m-header');
+            const diff = inputVal - selectedItem.h;
+            if(inputVal <= 0) { resBox.classList.add('hidden'); return; }
             resBox.classList.remove('hidden');
-            
             if(diff > 0) {
                 hdr.className = "p-10 text-white relative danger-mode shadow-2xl";
-                card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 400);
-                resBox.className = "p-8 rounded-[2.5rem] text-center bg-red-50 border-red-600 text-red-700 shadow-xl";
-                document.getElementById('result-status').innerText = "🚨 TEMUAN: KEMAHALAN!";
-                document.getElementById('result-diff').innerText = "+ Rp " + diff.toLocaleString('id-ID');
+                resBox.className = "p-8 rounded-[2rem] text-center bg-red-50 border-red-600 text-red-700 shadow-lg";
+                document.getElementById('st-label').innerText = "🚨 TEMUAN: KEMAHALAN!";
+                document.getElementById('df-label').innerText = "+ Rp " + diff.toLocaleString('id-ID');
             } else {
                 hdr.className = "bg-emerald-600 p-10 text-white relative shadow-2xl";
-                resBox.className = "p-8 rounded-[2.5rem] text-center bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xl";
-                document.getElementById('result-status').innerText = "✅ AMAN: SESUAI SSH";
-                document.getElementById('result-diff').innerText = "Rp 0";
+                resBox.className = "p-8 rounded-[2rem] text-center bg-emerald-50 border-emerald-500 text-emerald-800 shadow-lg";
+                document.getElementById('st-label').innerText = "✅ AMAN: SESUAI SSH";
+                document.getElementById('df-label').innerText = "Rp 0";
             }
         };
 
         window.closeM = () => document.getElementById('modal-audit').classList.add('hidden');
         window.closeP = () => document.getElementById('modal-pin').classList.add('hidden');
-        window.logout = () => { isAdmin = false; window.switchTab('cari'); showAlert("Berhasil Keluar (Logout)"); };
-        window.resetData = () => { if(confirm("Yakin ingin menghapus pembaruan dan kembali ke data bawaan?")) { localStorage.removeItem('sipring_db_2026'); location.reload(); }};
-        const showAlert = (msg) => { const b = document.getElementById('custom-alert'); document.getElementById('alert-msg').innerText = msg; b.classList.remove('hidden'); setTimeout(() => b.classList.add('hidden'), 2500); lucide.createIcons(); };
+        window.logout = () => { window.isAdmin = false; window.switchTab('search'); showAlert("Admin Berhasil Keluar"); };
+        const showAlert = (msg) => {
+            const b = document.getElementById('alert-box');
+            document.getElementById('alert-msg').innerText = msg;
+            b.classList.remove('hidden'); setTimeout(() => b.classList.add('hidden'), 2500);
+            lucide.createIcons();
+        };
+
+        initSession();
     </script>
+</head>
+<body class="bg-slate-50">
+
+    <div class="app-container p-4 pb-44">
+        <!-- Header -->
+        <header class="text-center mt-6 mb-10">
+            <div class="bg-blue-600 inline-flex p-5 rounded-[2.5rem] shadow-2xl mb-5 transform hover:scale-110 transition-all">
+                <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
+            </div>
+            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tighter italic leading-none">SI-PRING <span class="text-blue-600">SSH</span></h1>
+            <div class="mt-4 space-y-1 px-6">
+                <p class="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] leading-tight text-center">Sistem Informasi Pengawasan Standar Harga Pringsewu 2026</p>
+                <p class="text-slate-500 text-[11px] font-bold text-center">Inspektorat Kabupaten Pringsewu</p>
+            </div>
+            <div class="mt-4 flex justify-center">
+                <span id="conn-status" class="text-[8px] bg-slate-100 text-slate-400 px-3 py-1 rounded-full font-black uppercase tracking-widest italic">Menghubungkan...</span>
+            </div>
+        </header>
+
+        <!-- Cari View -->
+        <div id="view-search" class="space-y-6">
+            <div class="relative group">
+                <input type="text" id="search-input" placeholder="Cari barang SSH 2026..." 
+                    class="w-full p-6 pl-14 rounded-[2.5rem] shadow-xl border-none focus:ring-8 focus:ring-blue-100 outline-none text-lg transition-all"
+                    onkeyup="window.jalankanCari()">
+                <i data-lucide="search" class="absolute left-6 top-7 text-slate-300 group-focus-within:text-blue-600 transition-colors"></i>
+            </div>
+            <div id="results-card" class="hidden bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+                <div class="p-5 bg-slate-50 border-b flex justify-between items-center px-8">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic" id="r-count">Data Terpusat</span>
+                    <span class="text-[9px] text-blue-500 font-bold italic flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Ketuk Audit</span>
+                </div>
+                <div id="results-list" class="max-h-[50vh] overflow-y-auto custom-scroll"></div>
+            </div>
+            <div id="empty-state" class="text-center py-24 opacity-20">
+                <i data-lucide="cloud-lightning" class="w-24 h-24 mx-auto mb-4"></i>
+                <p class="font-black uppercase text-xs tracking-[0.3em] text-center italic">Pencarian Digital SSH 2026<br>Sinkronisasi Awan Otomatis</p>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="view-admin" class="hidden space-y-6 animate-in zoom-in-95 duration-300">
+            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100">
+                <div class="flex justify-between items-start mb-10">
+                    <div class="flex items-center gap-5 text-left">
+                        <div class="p-5 bg-blue-50 rounded-3xl text-blue-600 shadow-inner"><i data-lucide="cloud-upload"></i></div>
+                        <div>
+                            <h2 class="font-black text-slate-800 text-xl leading-none">Update Awan</h2>
+                            <p class="text-[10px] text-emerald-600 font-bold uppercase mt-2 italic leading-none">Database 2026 Aktif</p>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="p-3 bg-red-50 text-red-400 rounded-2xl hover:text-red-600 transition-all"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                </div>
+                <div class="border-4 border-dotted border-slate-200 rounded-[2.5rem] p-12 text-center bg-slate-50 hover:bg-blue-50 cursor-pointer group mb-8"
+                    onclick="document.getElementById('file-input').click()">
+                    <i data-lucide="file-spreadsheet" class="w-10 h-10 text-blue-500 mx-auto mb-5 group-hover:scale-110 transition-transform"></i>
+                    <p id="file-label" class="text-sm font-black text-slate-600 italic">Pilih Master CSV SSH</p>
+                    <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase tracking-widest text-center px-4">Sekali Update, semua HP pengguna akan berubah otomatis secara real-time.</p>
+                    <input type="file" id="file-input" class="hidden" accept=".csv" onchange="window.onFileSelect(this)">
+                </div>
+                <button id="btn-sync" onclick="window.updateDataPusat()" class="w-full py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl uppercase text-xs tracking-widest">SINKRONKAN SEMUA PENGGUNA</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-auto text-center pb-12 px-10">
+            <div class="h-px bg-slate-200 w-20 mx-auto mb-8"></div>
+            <p class="text-[11px] text-slate-800 font-black italic mb-1">Copyright © 2026 Diky Kurniawan</p>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center leading-none italic">Inspektorat Kabupaten Pringsewu</p>
+        </footer>
+    </div>
+
+    <!-- Nav Bawah -->
+    <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 flex nav-blur p-2 rounded-full shadow-2xl border border-slate-200 z-50 w-[90%] max-w-[400px]">
+        <button onclick="window.switchTab('search')" id="nav-search" class="flex-1 py-5 rounded-full font-black text-[10px] uppercase flex items-center justify-center gap-3 btn-active transition-all"><i data-lucide="search" class="w-4 h-4"></i> Cari</button>
+        <button onclick="window.switchTab('admin')" id="nav-admin" class="flex-1 py-5 rounded-full font-black text-[10px] uppercase flex items-center justify-center gap-3 text-slate-400 transition-all"><i id="lock-icon" data-lucide="lock" class="w-4 h-4"></i> Admin</button>
+    </nav>
+
+    <!-- PIN Modal -->
+    <div id="modal-pin" class="hidden fixed inset-0 bg-slate-900/95 flex items-center justify-center p-6 z-[200]">
+        <div class="bg-white w-full max-w-xs rounded-[3.5rem] p-12 text-center shadow-2xl animate-in zoom-in-95">
+            <h3 class="font-black text-slate-800 text-2xl mb-10 text-center">PIN Admin</h3>
+            <div class="flex justify-center gap-4 mb-10">
+                <div class="pin-dot" id="dot-1"></div><div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div><div class="pin-dot" id="dot-4"></div>
+            </div>
+            <input type="tel" id="pin-input" maxlength="4" class="absolute opacity-0 pointer-events-none" oninput="window.handlePinInput(this)">
+            <button onclick="document.getElementById('pin-input').focus()" class="w-full py-5 bg-slate-100 text-slate-600 font-black rounded-3xl mb-5 text-[10px] uppercase tracking-widest">Ketuk Mengisi PIN</button>
+            <button onclick="window.closeP()" class="text-slate-300 font-black text-[11px] uppercase">Batal</button>
+        </div>
+    </div>
+
+    <!-- Audit Modal -->
+    <div id="modal-audit" class="hidden fixed inset-0 bg-slate-900/90 flex items-end sm:items-center justify-center p-0 sm:p-6 z-[100]">
+        <div class="bg-white w-full max-w-md rounded-t-[4rem] sm:rounded-[4rem] overflow-hidden shadow-2xl">
+            <div id="m-header" class="p-12 text-white relative">
+                <button onclick="window.closeM()" class="absolute top-10 right-10 bg-white/10 p-3 rounded-full hover:bg-white/20 transition-all"><i data-lucide="x"></i></button>
+                <h2 id="m-name" class="text-2xl font-black text-left italic pr-12 leading-tight">Nama Barang</h2>
+            </div>
+            <div class="p-12 space-y-10 text-left">
+                <div class="grid grid-cols-2 gap-5">
+                    <div class="bg-slate-50 p-7 rounded-[2.5rem] text-left"><span class="text-[9px] font-black text-slate-300 uppercase block mb-2 tracking-widest">Standar SSH</span><span id="m-ssh" class="text-xl font-black text-blue-600">Rp 0</span></div>
+                    <div class="bg-slate-50 p-7 rounded-[2.5rem] text-left"><span class="text-[9px] font-black text-slate-300 uppercase block mb-2 tracking-widest">Satuan</span><span id="m-unit" class="text-xl font-bold uppercase text-slate-700 leading-none">-</span></div>
+                </div>
+                <div class="space-y-5">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-5 italic leading-none">Input Harga Nota Auditor</label>
+                    <div class="relative group">
+                        <span class="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">Rp</span>
+                        <input type="number" id="i-harga" placeholder="0" class="w-full pl-20 pr-10 py-8 bg-slate-50 border-4 border-transparent rounded-[3rem] text-5xl font-black focus:outline-none focus:bg-white focus:border-blue-50 transition-all shadow-inner" oninput="window.prosesAudit()">
+                    </div>
+                </div>
+                <div id="audit-res" class="hidden p-10 rounded-[3rem] text-center border-4 transform transition-all duration-300 shadow-2xl">
+                    <p id="st-label" class="font-black uppercase text-[10px] mb-3 italic tracking-widest"></p>
+                    <p id="df-label" class="text-5xl font-black leading-none"></p>
+                </div>
+            </div>
+            <div class="p-10 bg-slate-50 border-t">
+                <button onclick="window.closeM()" class="w-full py-6 bg-slate-800 text-white font-black rounded-[2.5rem] shadow-xl uppercase text-[11px] tracking-widest font-black">Selesai Audit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Box -->
+    <div id="alert-box" class="hidden fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-10 py-5 rounded-full shadow-2xl z-[300] font-black text-xs flex items-center gap-4 italic border border-slate-700"><i data-lucide="info" class="w-5 h-5 text-blue-400"></i><span id="alert-msg">Pesan</span></div>
+
 </body>
 </html>

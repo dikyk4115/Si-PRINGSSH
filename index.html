@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SI-PRING SSH 2026 | Inspektorat Pringsewu</title>
-    <!-- CSS & Ikon -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         :root { --primary: #2563eb; --danger: #dc2626; --success: #059669; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         .danger-mode { animation: pulse-red 0.8s infinite; }
         @keyframes pulse-red { 0%, 100% { background-color: var(--danger); } 50% { background-color: #991b1b; } }
@@ -23,116 +21,210 @@
         .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #cbd5e1; transition: all 0.2s; }
         .pin-dot.filled { background-color: var(--primary); border-color: var(--primary); transform: scale(1.2); }
     </style>
+</head>
+<body class="bg-slate-50">
 
-    <!-- Firebase Real-time Core -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    <div class="app-container p-4 pb-32">
+        <!-- Header Utama -->
+        <header class="text-center mt-6 mb-8 animate-in fade-in duration-700">
+            <div class="bg-blue-600 inline-flex p-4 rounded-[2rem] shadow-xl mb-4 transform hover:scale-110 transition-transform">
+                <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
+            </div>
+            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tighter italic leading-none">SI-PRING <span class="text-blue-600">SSH</span></h1>
+            <div class="mt-2 space-y-1">
+                <p class="text-blue-600 text-[10px] font-black uppercase tracking-widest leading-tight px-4 text-center text-balance">Sistem Informasi Pengawasan Standar Harga Pringsewu 2026</p>
+                <p class="text-slate-500 text-[11px] font-bold text-center">Inspektorat Kabupaten Pringsewu</p>
+            </div>
+        </header>
 
-        // Inisialisasi Firebase (Aturan 1, 2, 3)
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        <!-- Tampilan Cari -->
+        <div id="view-search" class="space-y-6">
+            <div class="relative group">
+                <input type="text" id="search-input" placeholder="Cari item SSH 2026 (contoh: Semen)..." 
+                    class="w-full p-6 pl-14 rounded-[2.5rem] shadow-xl border-none focus:ring-4 focus:ring-blue-100 outline-none text-lg transition-all"
+                    oninput="window.jalankanCari()">
+                <i data-lucide="search" class="absolute left-6 top-6 text-slate-300 group-focus-within:text-blue-600 transition-colors"></i>
+            </div>
 
-        // State Aplikasi
-        const ADMIN_PIN = "0808";
-        window.isAdmin = false;
-        window.database = [];
-        let csvContent = null;
-        let selectedItem = null;
+            <div id="results-card" class="hidden bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+                <div class="p-4 bg-slate-50 border-b flex justify-between items-center px-8 text-[10px] font-black text-slate-400 uppercase">
+                    <span id="label-hasil">Hasil Pencarian</span>
+                    <span class="text-blue-500 italic">Ketuk untuk Uji Harga</span>
+                </div>
+                <div id="results-list" class="max-h-[50vh] overflow-y-auto custom-scroll"></div>
+            </div>
 
-        // Langkah 1: Login Dulu (Wajib Aturan 3)
-        const initSession = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+            <div id="empty-state" class="text-center py-20 opacity-20">
+                <i data-lucide="database-search" class="w-20 h-20 mx-auto mb-4"></i>
+                <p class="font-bold uppercase text-xs tracking-widest text-center leading-relaxed">Masukkan kata kunci barang<br>untuk audit standar harga 2026</p>
+            </div>
+        </div>
+
+        <!-- Tampilan Admin (Update Data) -->
+        <div id="view-admin" class="hidden space-y-6 animate-in zoom-in-95 duration-300">
+            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100">
+                <div class="flex justify-between items-start mb-8">
+                    <div class="flex items-center gap-4 text-left">
+                        <div class="p-4 bg-blue-50 rounded-2xl text-blue-600 shadow-inner">
+                            <i data-lucide="file-spreadsheet"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-black text-slate-800 text-lg leading-none">Update Database</h2>
+                            <p class="text-[10px] text-emerald-600 font-bold uppercase mt-1 italic">Mode Admin Aktif</p>
+                        </div>
+                    </div>
+                    <button onclick="window.logoutAdmin()" class="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                        <i data-lucide="log-out" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <div class="border-4 border-dotted border-slate-200 rounded-[2.5rem] p-10 text-center bg-slate-50 hover:bg-blue-50 cursor-pointer group mb-8 transition-all"
+                    onclick="document.getElementById('file-input').click()">
+                    <i data-lucide="upload-cloud" class="w-12 h-12 text-blue-500 mx-auto mb-4 group-hover:scale-110 transition-transform"></i>
+                    <p id="file-label" class="text-sm font-black text-slate-600 italic">Pilih File CSV SSH 2026</p>
+                    <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase">Format: Uraian, Satuan, Harga</p>
+                    <input type="file" id="file-input" class="hidden" accept=".csv" onchange="window.onFileSelect(this)">
+                </div>
+
+                <button onclick="window.importData()" class="w-full py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl hover:bg-blue-700 active:scale-95 transition-all uppercase text-xs tracking-widest">
+                    SINKRONKAN DATA SEKARANG
+                </button>
                 
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        // Langkah 2: Jika sudah login, dengarkan data awan (Aturan 1)
-                        listenToCloud();
-                    }
-                });
-            } catch (err) {
-                console.error("Auth failed:", err);
-                loadOfflineData();
-            }
-        };
+                <button onclick="window.resetData()" class="w-full mt-4 py-3 text-slate-300 font-bold text-[9px] uppercase tracking-widest hover:text-red-500 transition-colors">Hapus Semua & Kembali Default</button>
+            </div>
+        </div>
 
-        const listenToCloud = () => {
-            // Path Ketat Sesuai Aturan 1
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ssh_master', 'current');
+        <!-- Footer -->
+        <footer class="mt-12 text-center pb-10 px-6 border-t pt-8">
+            <p class="text-[11px] text-slate-800 font-black italic mb-1">Copyright © 2026 Diky Kurniawan</p>
+            <p class="text-[9px] text-slate-400 font-medium text-center leading-none italic">Inspektorat Kabupaten Pringsewu - Latsar CPNS</p>
+        </footer>
+    </div>
+
+    <!-- Navigasi Bawah -->
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex bg-white/90 backdrop-blur-xl p-2 rounded-full shadow-2xl border border-slate-200 z-50 w-[90%] max-w-[400px]">
+        <button onclick="window.switchTab('search')" id="nav-search" class="flex-1 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 btn-active transition-all">
+            <i data-lucide="search" class="w-4 h-4"></i> Cari
+        </button>
+        <button onclick="window.switchTab('admin')" id="nav-admin" class="flex-1 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 text-slate-400 transition-all">
+            <i id="lock-icon" data-lucide="lock" class="w-4 h-4"></i> Admin
+        </button>
+    </nav>
+
+    <!-- Modal PIN Admin -->
+    <div id="modal-pin" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
+        <div class="bg-white w-full max-w-xs rounded-[3rem] p-10 text-center shadow-2xl animate-in zoom-in-95">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="lock-keyhole"></i>
+            </div>
+            <h3 class="font-black text-slate-800 text-xl mb-2">Akses Terbatas</h3>
+            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-8 text-center">Masukkan PIN Keamanan Admin</p>
             
-            onSnapshot(docRef, (snap) => {
-                if (snap.exists()) {
-                    window.database = snap.data().items || [];
-                    updateConnStatus(true);
-                    // Refresh pencarian jika user sedang mengetik
-                    if (document.getElementById('search-input').value) window.jalankanCari();
-                } else {
-                    loadOfflineData();
-                }
-            }, (err) => {
-                console.error("Sync error:", err);
-                loadOfflineData();
-            });
-        };
+            <div class="flex justify-center gap-4 mb-8">
+                <div class="pin-dot" id="dot-1"></div><div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div><div class="pin-dot" id="dot-4"></div>
+            </div>
+            <input type="tel" id="pin-input" maxlength="4" class="absolute opacity-0 pointer-events-none" oninput="window.handlePinInput(this)">
+            <button onclick="document.getElementById('pin-input').focus()" class="w-full py-4 bg-slate-100 text-slate-600 font-black rounded-2xl mb-4 text-[10px] uppercase tracking-widest">Ketuk Mengisi PIN</button>
+            <button onclick="window.closePinModal()" class="text-slate-300 font-bold text-[10px] uppercase">Batalkan</button>
+        </div>
+    </div>
 
-        const updateConnStatus = (online) => {
-            const el = document.getElementById('conn-status');
-            el.innerText = online ? "Cloud Terhubung (Update Otomatis)" : "Mode Lokal (Offline)";
-            el.className = online ? "text-[8px] bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-black uppercase tracking-widest"
-                                  : "text-[8px] bg-slate-100 text-slate-400 px-3 py-1 rounded-full font-black uppercase tracking-widest";
-        };
+    <!-- Modal Audit -->
+    <div id="modal-audit" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-[100]">
+        <div id="modal-card-inner" class="bg-white w-full max-w-md rounded-t-[3.5rem] sm:rounded-[3.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+            <div id="modal-header-visual" class="bg-slate-800 p-10 text-white relative">
+                <button onclick="window.tutupModal()" class="absolute top-8 right-8 bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                <h2 id="modal-name" class="text-2xl font-black leading-tight pr-10 text-left">Nama Item</h2>
+            </div>
+            <div class="p-10 space-y-8">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-left shadow-inner">
+                        <span class="text-[9px] font-black text-slate-300 uppercase block mb-1">Standar SSH</span>
+                        <span id="modal-ssh" class="text-xl font-black text-blue-600 leading-none">Rp 0</span>
+                    </div>
+                    <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-left shadow-inner">
+                        <span class="text-[9px] font-black text-slate-300 uppercase block mb-1">Satuan</span>
+                        <span id="modal-unit" class="text-xl font-bold text-slate-700 uppercase leading-none">-</span>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 italic text-left">Input Harga Nota Auditor</label>
+                    <div class="relative group">
+                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">Rp</span>
+                        <input type="number" id="input-harga" placeholder="0" class="w-full pl-16 pr-8 py-6 bg-slate-50 border-4 border-transparent rounded-[2rem] text-4xl font-black focus:outline-none focus:bg-white focus:border-blue-50 transition-all shadow-inner" oninput="window.ujiHarga()">
+                    </div>
+                </div>
+                <div id="modal-result" class="hidden p-8 rounded-[2.5rem] text-center border-4 transform transition-all duration-300 shadow-xl">
+                    <p id="result-status" class="font-black uppercase text-[10px] tracking-widest mb-2 italic"></p>
+                    <p id="result-diff" class="text-4xl font-black leading-none"></p>
+                </div>
+            </div>
+            <div class="p-8 bg-slate-50 border-t">
+                <button onclick="window.tutupModal()" class="w-full py-5 bg-slate-800 text-white font-black rounded-3xl shadow-xl uppercase text-[10px] tracking-widest font-black active:scale-95 transition-all">Selesai Audit</button>
+            </div>
+        </div>
+    </div>
 
-        const loadOfflineData = () => {
-            const local = localStorage.getItem('sipring_cache_2026');
-            window.database = local ? JSON.parse(local) : [
-                {n:"Contoh Barang (Update di Admin)", s:"bh", h:1000, k:"Default"}
-            ];
-            updateConnStatus(false);
-        };
+    <script>
+        // Database Bawaan (Default)
+        const INITIAL_DATA = [
+            {n:"Amplop Besar (untuk berkas)", s:"bh", h:5500},
+            {n:"Amplop coklat besar", s:"pak", h:75000},
+            {n:"Lakban Bening Nachi 5 cm", s:"bh", h:12500},
+            {n:"Semen Tiga Roda 50kg", s:"Sak", h:72000},
+            {n:"Kertas HVS A4 80gr", s:"Rim", h:54000},
+            {n:"Tali Asih Veteran", s:"paket", h:1000000},
+            {n:"Selendang Tapis", s:"bh", h:120000},
+            {n:"Tripod +Bluetooth", s:"Pcs", h:155000}
+        ];
 
-        // Fungsi Global untuk Tombol-Tombol
+        const ADMIN_PIN = "0808";
+        let isAdmin = false;
+        let database = JSON.parse(localStorage.getItem('sipring_db_2026')) || INITIAL_DATA;
+        let selectedItem = null;
+        let csvContent = null;
+
+        window.onload = () => { lucide.createIcons(); };
+
+        // Navigasi Tab
         window.switchTab = (tab) => {
-            if(tab === 'admin' && !window.isAdmin) {
+            if(tab === 'admin' && !isAdmin) {
                 document.getElementById('modal-pin').classList.remove('hidden');
                 document.getElementById('pin-input').value = '';
                 updateDots("");
                 document.getElementById('pin-input').focus();
                 return;
             }
-            const vSearch = document.getElementById('view-search');
+            const vCari = document.getElementById('view-search');
             const vAdmin = document.getElementById('view-admin');
-            const nSearch = document.getElementById('nav-search');
+            const nCari = document.getElementById('nav-search');
             const nAdmin = document.getElementById('nav-admin');
 
             if(tab === 'search') {
-                vSearch.classList.remove('hidden'); vAdmin.classList.add('hidden');
-                nSearch.classList.add('btn-active'); nAdmin.classList.remove('btn-active');
+                vCari.classList.remove('hidden'); vAdmin.classList.add('hidden');
+                nCari.classList.add('btn-active'); nCari.classList.remove('text-slate-400');
+                nAdmin.classList.remove('btn-active'); nAdmin.classList.add('text-slate-400');
             } else {
-                vSearch.classList.add('hidden'); vAdmin.classList.remove('hidden');
-                nAdmin.classList.add('btn-active'); nSearch.classList.remove('btn-active');
+                vCari.classList.add('hidden'); vAdmin.classList.remove('hidden');
+                nAdmin.classList.add('btn-active'); nAdmin.classList.remove('text-slate-400');
+                nCari.classList.remove('btn-active'); nCari.classList.add('text-slate-400');
             }
             lucide.createIcons();
         };
 
+        // PIN Admin Logic
         window.handlePinInput = (el) => {
             updateDots(el.value);
             if(el.value === ADMIN_PIN) {
-                window.isAdmin = true;
+                isAdmin = true;
                 document.getElementById('lock-icon').setAttribute('data-lucide', 'database');
                 document.getElementById('modal-pin').classList.add('hidden');
                 window.switchTab('admin');
-                showAlert("✅ Akses Admin Aktif");
+                alert("✅ Akses Admin Aktif");
             } else if(el.value.length >= 4) {
-                showAlert("❌ PIN Salah!");
+                alert("❌ PIN Salah!");
                 el.value = ""; updateDots("");
             }
         };
@@ -144,6 +236,9 @@
             }
         };
 
+        window.closePinModal = () => document.getElementById('modal-pin').classList.add('hidden');
+
+        // Import CSV Logic
         window.onFileSelect = (input) => {
             const file = input.files[0];
             if(file) {
@@ -154,245 +249,95 @@
             }
         };
 
-        // FUNGSI UPDATE DATA PUSAT (Update ke Awan)
-        window.updateDataPusat = async () => {
-            if(!csvContent) { showAlert("⚠️ Pilih file CSV!"); return; }
-            const btn = document.getElementById('btn-sync');
-            btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i> MENGIRIM...';
-            lucide.createIcons();
-
+        window.importData = () => {
+            if(!csvContent) { alert("⚠️ Pilih file CSV dulu!"); return; }
             try {
                 const lines = csvContent.split('\n');
                 const newDB = [];
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim(); if(!line) continue;
                     const p = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    if(p.length >= 4) {
-                        const n = p[1].replace(/"/g, '').trim();
-                        const s = p[2].replace(/"/g, '').trim();
-                        const h = parseFloat(p[3].replace(/"/g, '').replace(/[^0-9.-]+/g,""));
+                    if(p.length >= 3) {
+                        const n = p[0].replace(/"/g, '').trim();
+                        const s = p[1].replace(/"/g, '').trim();
+                        const h = parseFloat(p[2].replace(/"/g, '').replace(/[^0-9.-]+/g,""));
                         if(n && !isNaN(h)) newDB.push({ n, s, h });
                     }
                 }
-                
                 if(newDB.length > 0) {
-                    // Simpan ke Firestore (Akan otomatis update di HP semua pengguna)
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'ssh_master', 'current');
-                    await setDoc(docRef, { 
-                        items: newDB, 
-                        updatedAt: new Date().toISOString(),
-                        author: "Diky Kurniawan"
-                    });
-                    
-                    localStorage.setItem('sipring_cache_2026', JSON.stringify(newDB));
-                    showAlert(`🚀 BERHASIL! ${newDB.length} data dikirim ke semua auditor.`);
+                    database = newDB;
+                    localStorage.setItem('sipring_db_2026', JSON.stringify(database));
+                    alert(`✅ Berhasil! ${database.length} Item Diperbarui`);
                     window.switchTab('search');
                 }
-            } catch(e) { showAlert("❌ Gagal Terhubung Awan"); }
-            btn.disabled = false;
-            btn.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5"></i> SINKRONKAN SEMUA PENGGUNA';
-            lucide.createIcons();
+            } catch(e) { alert("❌ Gagal Import!"); }
         };
 
-        // FUNGSI CARI (PASTI JALAN)
-        window.jalankanCari = () => {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            const list = document.getElementById('results-list');
+        // Pencarian
+        window.jalankanCari = function() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
             const card = document.getElementById('results-card');
+            const list = document.getElementById('results-list');
             const empty = document.getElementById('empty-state');
-            
-            if(q.length < 1) { card.classList.add('hidden'); empty.classList.remove('hidden'); return; }
-            
-            const filtered = window.database.filter(i => i.n.toLowerCase().includes(q));
+            if(query.length < 1) { card.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+            const filtered = database.filter(item => item.n.toLowerCase().includes(query));
             list.innerHTML = '';
-            
             if(filtered.length > 0) {
                 card.classList.remove('hidden'); empty.classList.add('hidden');
-                document.getElementById('r-count').innerText = `${filtered.length} Barang SSH 2026`;
+                document.getElementById('label-hasil').innerText = `${filtered.length} Barang Ditemukan`;
                 filtered.forEach(item => {
                     const div = document.createElement('div');
-                    div.className = "px-8 py-5 border-b hover:bg-blue-50 active:bg-blue-100 cursor-pointer flex justify-between items-center transition-all";
+                    div.className = "px-8 py-5 border-b hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-all active:bg-blue-100";
                     div.onclick = () => window.bukaAudit(item);
                     div.innerHTML = `
-                        <div class="text-left">
+                        <div class="text-left pr-4">
                             <p class="font-bold text-slate-800 leading-tight">${item.n}</p>
                             <p class="text-[9px] text-slate-400 font-black uppercase mt-1 tracking-widest">${item.s}</p>
                         </div>
-                        <p class="text-lg font-black text-slate-900 shrink-0 ml-4">Rp ${item.h.toLocaleString('id-ID')}</p>
+                        <p class="text-lg font-black text-slate-900 shrink-0">Rp ${item.h.toLocaleString('id-ID')}</p>
                     `;
                     list.appendChild(div);
                 });
             } else { list.innerHTML = '<p class="p-12 text-center text-slate-400 italic">Data tidak ditemukan...</p>'; }
         };
 
-        window.bukaAudit = (item) => {
+        // Audit Logic
+        window.bukaAudit = function(item) {
             selectedItem = item;
-            document.getElementById('m-name').innerText = item.n;
-            document.getElementById('m-ssh').innerText = "Rp " + item.h.toLocaleString('id-ID');
-            document.getElementById('m-unit').innerText = item.s;
-            document.getElementById('i-harga').value = '';
-            document.getElementById('audit-res').classList.add('hidden');
-            document.getElementById('m-header').className = "bg-slate-800 p-10 text-white relative";
+            document.getElementById('modal-name').innerText = item.n;
+            document.getElementById('modal-ssh').innerText = "Rp " + item.h.toLocaleString('id-ID');
+            document.getElementById('modal-unit').innerText = item.s;
+            document.getElementById('input-harga').value = '';
+            document.getElementById('modal-result').classList.add('hidden');
+            document.getElementById('modal-header-visual').className = "bg-slate-800 p-10 text-white relative";
             document.getElementById('modal-audit').classList.remove('hidden');
             lucide.createIcons();
         };
 
-        window.prosesAudit = () => {
-            const inputVal = parseFloat(document.getElementById('i-harga').value) || 0;
-            const resBox = document.getElementById('audit-res');
-            const hdr = document.getElementById('m-header');
-            const diff = inputVal - selectedItem.h;
-            if(inputVal <= 0) { resBox.classList.add('hidden'); return; }
+        window.ujiHarga = function() {
+            const val = parseFloat(document.getElementById('input-harga').value) || 0;
+            const resBox = document.getElementById('modal-result');
+            const hdr = document.getElementById('modal-header-visual');
+            const card = document.getElementById('modal-card-inner');
+            const diff = val - selectedItem.h;
+            if(val <= 0) { resBox.classList.add('hidden'); return; }
             resBox.classList.remove('hidden');
             if(diff > 0) {
                 hdr.className = "p-10 text-white relative danger-mode shadow-2xl";
-                resBox.className = "p-8 rounded-[2rem] text-center bg-red-50 border-red-600 text-red-700 shadow-lg";
-                document.getElementById('st-label').innerText = "🚨 TEMUAN: KEMAHALAN!";
-                document.getElementById('df-label').innerText = "+ Rp " + diff.toLocaleString('id-ID');
+                resBox.className = "p-8 rounded-[2.5rem] text-center bg-red-50 border-red-600 text-red-700 shadow-lg";
+                document.getElementById('result-status').innerText = "🚨 TEMUAN: KEMAHALAN HARGA!";
+                document.getElementById('result-diff').innerText = "+ Rp " + diff.toLocaleString('id-ID');
             } else {
                 hdr.className = "bg-emerald-600 p-10 text-white relative shadow-2xl";
-                resBox.className = "p-8 rounded-[2rem] text-center bg-emerald-50 border-emerald-500 text-emerald-800 shadow-lg";
-                document.getElementById('st-label').innerText = "✅ AMAN: SESUAI SSH";
-                document.getElementById('df-label').innerText = "Rp 0";
+                resBox.className = "p-8 rounded-[2.5rem] text-center bg-emerald-50 border-emerald-500 text-emerald-800 shadow-lg";
+                document.getElementById('result-status').innerText = "✅ AMAN: SESUAI STANDAR";
+                document.getElementById('result-diff').innerText = "Rp 0";
             }
         };
 
-        window.closeM = () => document.getElementById('modal-audit').classList.add('hidden');
-        window.closeP = () => document.getElementById('modal-pin').classList.add('hidden');
-        window.logout = () => { window.isAdmin = false; window.switchTab('search'); showAlert("Admin Berhasil Keluar"); };
-        const showAlert = (msg) => {
-            const b = document.getElementById('alert-box');
-            document.getElementById('alert-msg').innerText = msg;
-            b.classList.remove('hidden'); setTimeout(() => b.classList.add('hidden'), 2500);
-            lucide.createIcons();
-        };
-
-        initSession();
+        window.tutupModal = () => document.getElementById('modal-audit').classList.add('hidden');
+        window.logoutAdmin = () => { isAdmin = false; window.switchTab('search'); alert("Logout Admin Berhasil"); };
+        window.resetData = () => { if(confirm("Hapus semua data upload?")) { localStorage.removeItem('sipring_db_2026'); location.reload(); }};
     </script>
-</head>
-<body class="bg-slate-50">
-
-    <div class="app-container p-4 pb-44">
-        <!-- Header -->
-        <header class="text-center mt-6 mb-10">
-            <div class="bg-blue-600 inline-flex p-5 rounded-[2.5rem] shadow-2xl mb-5 transform hover:scale-110 transition-all">
-                <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
-            </div>
-            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tighter italic leading-none">SI-PRING <span class="text-blue-600">SSH</span></h1>
-            <div class="mt-4 space-y-1 px-6">
-                <p class="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] leading-tight text-center">Sistem Informasi Pengawasan Standar Harga Pringsewu 2026</p>
-                <p class="text-slate-500 text-[11px] font-bold text-center">Inspektorat Kabupaten Pringsewu</p>
-            </div>
-            <div class="mt-4 flex justify-center">
-                <span id="conn-status" class="text-[8px] bg-slate-100 text-slate-400 px-3 py-1 rounded-full font-black uppercase tracking-widest italic">Menghubungkan...</span>
-            </div>
-        </header>
-
-        <!-- Cari View -->
-        <div id="view-search" class="space-y-6">
-            <div class="relative group">
-                <input type="text" id="search-input" placeholder="Cari barang SSH 2026..." 
-                    class="w-full p-6 pl-14 rounded-[2.5rem] shadow-xl border-none focus:ring-8 focus:ring-blue-100 outline-none text-lg transition-all"
-                    onkeyup="window.jalankanCari()">
-                <i data-lucide="search" class="absolute left-6 top-7 text-slate-300 group-focus-within:text-blue-600 transition-colors"></i>
-            </div>
-            <div id="results-card" class="hidden bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
-                <div class="p-5 bg-slate-50 border-b flex justify-between items-center px-8">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic" id="r-count">Data Terpusat</span>
-                    <span class="text-[9px] text-blue-500 font-bold italic flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Ketuk Audit</span>
-                </div>
-                <div id="results-list" class="max-h-[50vh] overflow-y-auto custom-scroll"></div>
-            </div>
-            <div id="empty-state" class="text-center py-24 opacity-20">
-                <i data-lucide="cloud-lightning" class="w-24 h-24 mx-auto mb-4"></i>
-                <p class="font-black uppercase text-xs tracking-[0.3em] text-center italic">Pencarian Digital SSH 2026<br>Sinkronisasi Awan Otomatis</p>
-            </div>
-        </div>
-
-        <!-- Admin View -->
-        <div id="view-admin" class="hidden space-y-6 animate-in zoom-in-95 duration-300">
-            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100">
-                <div class="flex justify-between items-start mb-10">
-                    <div class="flex items-center gap-5 text-left">
-                        <div class="p-5 bg-blue-50 rounded-3xl text-blue-600 shadow-inner"><i data-lucide="cloud-upload"></i></div>
-                        <div>
-                            <h2 class="font-black text-slate-800 text-xl leading-none">Update Awan</h2>
-                            <p class="text-[10px] text-emerald-600 font-bold uppercase mt-2 italic leading-none">Database 2026 Aktif</p>
-                        </div>
-                    </div>
-                    <button onclick="logout()" class="p-3 bg-red-50 text-red-400 rounded-2xl hover:text-red-600 transition-all"><i data-lucide="log-out" class="w-5 h-5"></i></button>
-                </div>
-                <div class="border-4 border-dotted border-slate-200 rounded-[2.5rem] p-12 text-center bg-slate-50 hover:bg-blue-50 cursor-pointer group mb-8"
-                    onclick="document.getElementById('file-input').click()">
-                    <i data-lucide="file-spreadsheet" class="w-10 h-10 text-blue-500 mx-auto mb-5 group-hover:scale-110 transition-transform"></i>
-                    <p id="file-label" class="text-sm font-black text-slate-600 italic">Pilih Master CSV SSH</p>
-                    <p class="text-[9px] text-slate-400 mt-3 font-bold uppercase tracking-widest text-center px-4">Sekali Update, semua HP pengguna akan berubah otomatis secara real-time.</p>
-                    <input type="file" id="file-input" class="hidden" accept=".csv" onchange="window.onFileSelect(this)">
-                </div>
-                <button id="btn-sync" onclick="window.updateDataPusat()" class="w-full py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl uppercase text-xs tracking-widest">SINKRONKAN SEMUA PENGGUNA</button>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="mt-auto text-center pb-12 px-10">
-            <div class="h-px bg-slate-200 w-20 mx-auto mb-8"></div>
-            <p class="text-[11px] text-slate-800 font-black italic mb-1">Copyright © 2026 Diky Kurniawan</p>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center leading-none italic">Inspektorat Kabupaten Pringsewu</p>
-        </footer>
-    </div>
-
-    <!-- Nav Bawah -->
-    <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 flex nav-blur p-2 rounded-full shadow-2xl border border-slate-200 z-50 w-[90%] max-w-[400px]">
-        <button onclick="window.switchTab('search')" id="nav-search" class="flex-1 py-5 rounded-full font-black text-[10px] uppercase flex items-center justify-center gap-3 btn-active transition-all"><i data-lucide="search" class="w-4 h-4"></i> Cari</button>
-        <button onclick="window.switchTab('admin')" id="nav-admin" class="flex-1 py-5 rounded-full font-black text-[10px] uppercase flex items-center justify-center gap-3 text-slate-400 transition-all"><i id="lock-icon" data-lucide="lock" class="w-4 h-4"></i> Admin</button>
-    </nav>
-
-    <!-- PIN Modal -->
-    <div id="modal-pin" class="hidden fixed inset-0 bg-slate-900/95 flex items-center justify-center p-6 z-[200]">
-        <div class="bg-white w-full max-w-xs rounded-[3.5rem] p-12 text-center shadow-2xl animate-in zoom-in-95">
-            <h3 class="font-black text-slate-800 text-2xl mb-10 text-center">PIN Admin</h3>
-            <div class="flex justify-center gap-4 mb-10">
-                <div class="pin-dot" id="dot-1"></div><div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div><div class="pin-dot" id="dot-4"></div>
-            </div>
-            <input type="tel" id="pin-input" maxlength="4" class="absolute opacity-0 pointer-events-none" oninput="window.handlePinInput(this)">
-            <button onclick="document.getElementById('pin-input').focus()" class="w-full py-5 bg-slate-100 text-slate-600 font-black rounded-3xl mb-5 text-[10px] uppercase tracking-widest">Ketuk Mengisi PIN</button>
-            <button onclick="window.closeP()" class="text-slate-300 font-black text-[11px] uppercase">Batal</button>
-        </div>
-    </div>
-
-    <!-- Audit Modal -->
-    <div id="modal-audit" class="hidden fixed inset-0 bg-slate-900/90 flex items-end sm:items-center justify-center p-0 sm:p-6 z-[100]">
-        <div class="bg-white w-full max-w-md rounded-t-[4rem] sm:rounded-[4rem] overflow-hidden shadow-2xl">
-            <div id="m-header" class="p-12 text-white relative">
-                <button onclick="window.closeM()" class="absolute top-10 right-10 bg-white/10 p-3 rounded-full hover:bg-white/20 transition-all"><i data-lucide="x"></i></button>
-                <h2 id="m-name" class="text-2xl font-black text-left italic pr-12 leading-tight">Nama Barang</h2>
-            </div>
-            <div class="p-12 space-y-10 text-left">
-                <div class="grid grid-cols-2 gap-5">
-                    <div class="bg-slate-50 p-7 rounded-[2.5rem] text-left"><span class="text-[9px] font-black text-slate-300 uppercase block mb-2 tracking-widest">Standar SSH</span><span id="m-ssh" class="text-xl font-black text-blue-600">Rp 0</span></div>
-                    <div class="bg-slate-50 p-7 rounded-[2.5rem] text-left"><span class="text-[9px] font-black text-slate-300 uppercase block mb-2 tracking-widest">Satuan</span><span id="m-unit" class="text-xl font-bold uppercase text-slate-700 leading-none">-</span></div>
-                </div>
-                <div class="space-y-5">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-5 italic leading-none">Input Harga Nota Auditor</label>
-                    <div class="relative group">
-                        <span class="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">Rp</span>
-                        <input type="number" id="i-harga" placeholder="0" class="w-full pl-20 pr-10 py-8 bg-slate-50 border-4 border-transparent rounded-[3rem] text-5xl font-black focus:outline-none focus:bg-white focus:border-blue-50 transition-all shadow-inner" oninput="window.prosesAudit()">
-                    </div>
-                </div>
-                <div id="audit-res" class="hidden p-10 rounded-[3rem] text-center border-4 transform transition-all duration-300 shadow-2xl">
-                    <p id="st-label" class="font-black uppercase text-[10px] mb-3 italic tracking-widest"></p>
-                    <p id="df-label" class="text-5xl font-black leading-none"></p>
-                </div>
-            </div>
-            <div class="p-10 bg-slate-50 border-t">
-                <button onclick="window.closeM()" class="w-full py-6 bg-slate-800 text-white font-black rounded-[2.5rem] shadow-xl uppercase text-[11px] tracking-widest font-black">Selesai Audit</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Alert Box -->
-    <div id="alert-box" class="hidden fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-10 py-5 rounded-full shadow-2xl z-[300] font-black text-xs flex items-center gap-4 italic border border-slate-700"><i data-lucide="info" class="w-5 h-5 text-blue-400"></i><span id="alert-msg">Pesan</span></div>
-
 </body>
 </html>
